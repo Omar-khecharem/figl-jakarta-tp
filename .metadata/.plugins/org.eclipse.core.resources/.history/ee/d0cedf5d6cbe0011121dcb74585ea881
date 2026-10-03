@@ -1,0 +1,193 @@
+package tn.isimg.salles.web;
+
+import java.io.IOException;
+import java.util.Collections;
+
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebInitParam;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+@WebServlet(
+    urlPatterns = "/info",
+    initParams = {
+        @WebInitParam(name = "application", value = "Réservation de salles"),
+        @WebInitParam(name = "auteur", value = "Omar Khecharem")
+    }
+)
+public class InfoServlet extends HttpServlet {
+
+    private static final long serialVersionUID = 1L;
+
+    private String application;
+    private String auteur;
+
+    @Override
+    public void init(ServletConfig config) throws ServletException {
+        super.init(config);
+
+        auteur = config.getInitParameter("auteur");
+        application = config.getInitParameter("application");
+
+        if (auteur == null || auteur.isBlank()) {
+            auteur = "Auteur inconnu";
+        }
+
+        if (application == null || application.isBlank()) {
+            application = "Application inconnue";
+        }
+
+        log("InfoServlet initialisée - application=" + application
+                + ", auteur=" + auteur);
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest request,
+                         HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("text/html;charset=UTF-8");
+
+        var langues = Collections.list(request.getLocales());
+
+        var entetes = Collections.list(request.getHeaderNames());
+
+        var lignesEntetes = new StringBuilder();
+
+        for (var nom : entetes) {
+            var valeur = request.getHeader(nom);
+
+            lignesEntetes.append("""
+                <tr>
+                    <td>%s</td>
+                    <td>%s</td>
+                </tr>
+                """.formatted(
+                    Html.escape(nom),
+                    Html.escape(valeur)
+                ));
+        }
+
+        var lignesLangues = new StringBuilder();
+
+        for (var langue : langues) {
+            lignesLangues.append("""
+                <li>%s</li>
+                """.formatted(
+                    Html.escape(langue.toLanguageTag())
+                ));
+        }
+
+        var url = request.getRequestURL().toString();
+        var methode = request.getMethod();
+        var ip = request.getRemoteAddr();
+        var protocole = request.getProtocol();
+
+        var html = """
+            <!DOCTYPE html>
+            <html lang="fr">
+            <head>
+                <meta charset="UTF-8">
+                <title>Diagnostic - %s</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        margin: 40px;
+                    }
+
+                    table {
+                        border-collapse: collapse;
+                        width: 100%%;
+                        margin-top: 20px;
+                    }
+
+                    th, td {
+                        border: 1px solid #ccc;
+                        padding: 10px;
+                        text-align: left;
+                    }
+
+                    th {
+                        background: #f2f2f2;
+                    }
+
+                    code {
+                        background: #eee;
+                        padding: 3px 6px;
+                    }
+                </style>
+            </head>
+
+            <body>
+
+                <h1>Bienvenue dans %s</h1>
+
+                <h2>Application</h2>
+
+                <p>
+                    <strong>Application :</strong> %s
+                </p>
+
+                <p>
+                    <strong>Auteur :</strong> %s
+                </p>
+
+                <h2>Informations sur la requête</h2>
+
+                <p>
+                    <strong>URL :</strong> %s
+                </p>
+
+                <p>
+                    <strong>Méthode HTTP :</strong> %s
+                </p>
+
+                <p>
+                    <strong>Adresse IP du client :</strong> %s
+                </p>
+
+                <p>
+                    <strong>Protocole :</strong> %s
+                </p>
+
+                <h2>Langues acceptées</h2>
+
+                <ul>
+                    %s
+                </ul>
+
+                <h2>Entêtes HTTP</h2>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Valeur</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        %s
+                    </tbody>
+                </table>
+
+            </body>
+            </html>
+            """.formatted(
+                Html.escape(application),
+                Html.escape(application),
+                Html.escape(auteur),
+                Html.escape(url),
+                Html.escape(methode),
+                Html.escape(ip),
+                Html.escape(protocole),
+                lignesLangues,
+                lignesEntetes
+            );
+
+        response.getWriter().print(html);
+    }
+}

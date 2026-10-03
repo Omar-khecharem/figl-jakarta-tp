@@ -1,0 +1,138 @@
+
+package tn.isimg.salles.web;
+
+import java.io.IOException;
+import java.util.Collections;
+
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebInitParam;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+@WebServlet(
+    urlPatterns = "/info",
+    initParams = {
+        @WebInitParam(
+            name = "application",
+            value = "Réservation de salles"
+        ),
+        @WebInitParam(
+            name = "auteur",
+            value = "Omar Khecharem"
+        )
+    }
+)
+public class InfoServlet extends HttpServlet {
+
+    private static final long serialVersionUID = 1L;
+
+    private String application;
+    private String auteur;
+
+    @Override
+    public void init(ServletConfig config)
+            throws ServletException {
+
+        super.init(config);
+
+        application = config.getInitParameter("application");
+        auteur = config.getInitParameter("auteur");
+
+        if (application == null || application.isBlank()) {
+            application = "Application inconnue";
+        }
+
+        if (auteur == null || auteur.isBlank()) {
+            auteur = "Auteur inconnu";
+        }
+
+        log("InfoServlet initialisée");
+    }
+
+    @Override
+    protected void doGet(
+            HttpServletRequest request,
+            HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setContentType("text/html;charset=UTF-8");
+
+        StringBuilder languesHtml = new StringBuilder();
+
+        for (var langue :
+                Collections.list(request.getLocales())) {
+
+            languesHtml.append("<li>")
+                    .append(Html.escape(
+                            langue.toLanguageTag()))
+                    .append("</li>");
+        }
+
+        StringBuilder entetesHtml = new StringBuilder();
+
+        var nomsEntetes =
+                Collections.list(request.getHeaderNames());
+
+        for (var nom : nomsEntetes) {
+
+            String valeur = request.getHeader(nom);
+
+            entetesHtml.append("<tr><td>")
+                    .append(Html.escape(nom))
+                    .append("</td><td>")
+                    .append(Html.escape(valeur))
+                    .append("</td></tr>");
+        }
+
+        String html = """
+            <!DOCTYPE html>
+            <html lang="fr">
+            <head>
+                <meta charset="UTF-8">
+                <title>%s</title>
+            </head>
+            <body>
+                <h1>Bienvenue dans %s</h1>
+
+                <h2>Informations sur l'application</h2>
+                <p><strong>Application :</strong> %s</p>
+                <p><strong>Auteur :</strong> %s</p>
+
+                <h2>Informations sur la requête</h2>
+                <p><strong>URL :</strong> %s</p>
+                <p><strong>Méthode :</strong> %s</p>
+                <p><strong>Adresse IP :</strong> %s</p>
+                <p><strong>Protocole :</strong> %s</p>
+
+                <h2>Langues acceptées</h2>
+                <ul>%s</ul>
+
+                <h2>En-têtes HTTP</h2>
+                <table border="1">
+                    <tr>
+                        <th>Nom</th>
+                        <th>Valeur</th>
+                    </tr>
+                    %s
+                </table>
+            </body>
+            </html>
+            """.formatted(
+                Html.escape(application),
+                Html.escape(application),
+                Html.escape(application),
+                Html.escape(auteur),
+                Html.escape(request.getRequestURL().toString()),
+                Html.escape(request.getMethod()),
+                Html.escape(request.getRemoteAddr()),
+                Html.escape(request.getProtocol()),
+                languesHtml,
+                entetesHtml
+            );
+
+        response.getWriter().print(html);
+    }
+}
